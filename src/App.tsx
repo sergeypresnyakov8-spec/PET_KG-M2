@@ -263,8 +263,10 @@ export default function App() {
                   <input 
                     type="text" 
                     value={inputs.priceKg} 
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => sync('priceKg', e.target.value)} 
+                    onChange={(e) => {
+                      setPricePriority('kg');
+                      sync('priceKg', e.target.value);
+                    }} 
                     className="h-8 w-full bg-transparent text-sm font-black outline-none" 
                   />
                 </div>
@@ -279,8 +281,10 @@ export default function App() {
                   <input 
                     type="text" 
                     value={inputs.priceM2} 
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => sync('priceM2', e.target.value)} 
+                    onChange={(e) => {
+                      setPricePriority('m2');
+                      sync('priceM2', e.target.value);
+                    }} 
                     className="h-8 w-full bg-transparent text-sm font-black outline-none" 
                   />
                 </div>
