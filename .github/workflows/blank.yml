@@ -1,0 +1,6 @@
+git init
+git add .
+git commit -m "Initial simple PET calculator"
+git branch -M main
+git remote add origin https://github.com/ВАШ_ЛОГИН/PET_KG-M2.git
+git push -u origin main
