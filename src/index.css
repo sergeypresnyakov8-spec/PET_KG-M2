@@ -8,7 +8,7 @@
   --color-border-subtle: #e2e8f0;
   --color-text-main: #1e293b;
   --color-text-muted: #64748b;
-  --color-bg-base: #f8fafc;
+  --color-bg-base: #f1f5f9;
   
   --font-sans: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "Courier New", "JetBrains Mono", monospace;
@@ -16,6 +16,28 @@
 
 @layer base {
   body {
-    @apply bg-bg-base text-text-main;
+    @apply text-text-main antialiased selection:bg-brand/10;
+    background: 
+      linear-gradient(rgba(241, 245, 249, 0.7), rgba(241, 245, 249, 0.7)),
+      url('/fon.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    position: relative;
+    min-height: 100vh;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+    z-index: -1;
   }
 }
