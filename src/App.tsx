@@ -202,8 +202,8 @@ export default function App() {
   const numPriceKg = parseNum(inputs.priceKg);
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-base overflow-x-hidden">
-      <header className="h-16 bg-white border-b border-border-subtle flex items-center justify-between px-6 shrink-0 z-10">
+    <div className="min-h-screen flex flex-col overflow-x-hidden">
+      <header className="h-16 bg-white/80 backdrop-blur-md border-b border-border-subtle flex items-center justify-between px-6 shrink-0 z-10 sticky top-0">
         <div className="flex items-center gap-4">
           <svg width="42" height="24" viewBox="0 0 110 60" fill="none" className="drop-shadow-sm">
             <path d="M5 5V55M5 55L30 5M30 5V55" stroke="#003B64" strokeWidth="12" strokeLinejoin="round"/>
@@ -217,7 +217,7 @@ export default function App() {
 
       <main className="flex-grow flex flex-col lg:flex-row gap-6 p-6 max-w-[1440px] mx-auto w-full">
         <aside className="w-full lg:w-[350px] shrink-0">
-          <div className="bg-white border border-border-subtle rounded-3xl p-6 shadow-sm flex flex-col gap-6 sticky top-6">
+          <div className="bg-white/80 backdrop-blur-xl border border-white/50 rounded-3xl p-6 shadow-2xl flex flex-col gap-6 lg:sticky lg:top-22">
             <div className="border-b border-slate-100 pb-2">
               <h2 className="text-base font-bold text-slate-900 m-0 flex items-center gap-2">
                 <Calculator className="w-4 h-4 text-brand" /> Ввод данных
@@ -299,7 +299,7 @@ export default function App() {
 
         <div className="flex-grow flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white border border-border-subtle rounded-[2rem] p-8 shadow-sm flex flex-col justify-between">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/90 backdrop-blur-xl border border-white/50 rounded-[2rem] p-8 shadow-2xl flex flex-col justify-between hover:shadow-brand/5 transition-all">
               <div>
                 <label className="text-xs font-bold text-text-muted uppercase tracking-[0.1em] mb-4 block">Характеристика</label>
                 <div className="text-5xl font-black text-slate-900 mb-2">
@@ -312,7 +312,7 @@ export default function App() {
               </div>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="bg-white border border-border-subtle rounded-[2rem] p-8 shadow-sm flex flex-col justify-between">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="bg-white/90 backdrop-blur-xl border border-white/50 rounded-[2rem] p-8 shadow-2xl flex flex-col justify-between hover:shadow-brand/5 transition-all">
               <div>
                 <label className="text-xs font-bold text-text-muted uppercase tracking-[0.1em] mb-4 block">Итоговый метраж</label>
                 <div className="text-6xl font-black font-mono tracking-tighter text-slate-900">{displayRU(numLength, 1)}</div>
@@ -323,15 +323,15 @@ export default function App() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-            <ResultSmallCard label="Общий вес" value={displayRU(numWeight, 2)} unit="кг" icon={<Weight className="w-5 h-5 text-brand" />} colorClass="bg-blue-50/80 text-brand border-blue-100" />
-            <ResultSmallCard label="Общая площадь" value={displayRU(numArea, 2)} unit="м²" icon={<Maximize className="w-5 h-5 text-emerald-600" />} colorClass="bg-emerald-50/80 text-emerald-600 border-emerald-100" />
-            <ResultSmallCard label="Итоговая цена" value={formatNum(numWeight * numPriceKg, 2, false)} unit="₽" icon={<CircleDollarSign className="w-5 h-5 text-amber-600" />} colorClass="bg-amber-50/80 text-amber-600 border-amber-100" />
-            <ResultSmallCard label="Количество м.п." value={displayRU(numLength, 0)} unit="м.п." icon={<Scissors className="w-5 h-5 text-indigo-600" />} colorClass="bg-indigo-50/80 text-indigo-600 border-indigo-100" />
+            <ResultSmallCard label="Общий вес" value={displayRU(numWeight, 2)} unit="кг" icon={<Weight className="w-5 h-5 text-brand" />} colorClass="bg-white/60 backdrop-blur-md border-white/40 text-brand" />
+            <ResultSmallCard label="Общая площадь" value={displayRU(numArea, 2)} unit="м²" icon={<Maximize className="w-5 h-5 text-emerald-600" />} colorClass="bg-white/60 backdrop-blur-md border-white/40 text-emerald-600" />
+            <ResultSmallCard label="Итоговая цена" value={formatNum(numWeight * numPriceKg, 2, false)} unit="₽" icon={<CircleDollarSign className="w-5 h-5 text-amber-600" />} colorClass="bg-white/60 backdrop-blur-md border-white/40 text-amber-600" />
+            <ResultSmallCard label="Количество м.п." value={displayRU(numLength, 0)} unit="м.п." icon={<Scissors className="w-5 h-5 text-indigo-600" />} colorClass="bg-white/60 backdrop-blur-md border-white/40 text-indigo-600" />
           </div>
         </div>
       </main>
 
-      <footer className="h-10 bg-white border-t border-border-subtle flex items-center justify-between px-6 shrink-0 text-[11px] text-text-muted uppercase tracking-widest font-semibold">
+      <footer className="h-10 bg-white/80 backdrop-blur-md border-t border-border-subtle flex items-center justify-between px-6 shrink-0 text-[11px] text-text-muted uppercase tracking-widest font-semibold z-10 sticky bottom-0">
         <div>ООО ИПК | Designed by Economist</div>
         <div>Инструментарий пересчёта ПЭТ материалов</div>
       </footer>
