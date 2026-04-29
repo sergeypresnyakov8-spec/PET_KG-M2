@@ -116,6 +116,7 @@ export default function App() {
     priceKg: "0",
     priceM2: "0"
   });
+  const [pricePriority, setPricePriority] = useState<'kg' | 'm2'>('kg');
 
   // Load cache
   useEffect(() => {
@@ -124,6 +125,7 @@ export default function App() {
       try {
         const state = JSON.parse(saved);
         if (state.thickness) setSelectedThickness(state.thickness);
+        if (state.pricePriority) setPricePriority(state.pricePriority);
         setInputs(prev => ({ ...prev, ...state }));
       } catch (e) { console.error(e); }
     }
@@ -133,9 +135,9 @@ export default function App() {
   // Save cache
   useEffect(() => {
     if (!loading) {
-      localStorage.setItem('pet_calc_cache', JSON.stringify({ ...inputs, thickness: selectedThickness }));
+      localStorage.setItem('pet_calc_cache', JSON.stringify({ ...inputs, thickness: selectedThickness, pricePriority }));
     }
-  }, [inputs, selectedThickness, loading]);
+  }, [inputs, selectedThickness, pricePriority, loading]);
 
   const record = useMemo(() => 
     data.find(r => r.thickness === selectedThickness) || data[0]
@@ -173,9 +175,17 @@ export default function App() {
     setInputs(prev => ({ ...prev, ...updates }));
   };
 
-  // Recalculate on thickness change
+  // Recalculate on thickness or priority change
   useEffect(() => {
-    if (!loading) sync('area', inputs.area);
+    if (!loading) {
+      sync('area', inputs.area);
+      // Sync price based on priority when thickness changes
+      if (pricePriority === 'kg') {
+        sync('priceKg', inputs.priceKg);
+      } else {
+        sync('priceM2', inputs.priceM2);
+      }
+    }
   }, [selectedThickness]);
 
   if (loading) return (
@@ -239,16 +249,40 @@ export default function App() {
 
             <InputField label="Длина (м.п.)" value={inputs.length} onChange={(v) => sync('length', v)} icon={<Scissors className="w-3 h-3 text-indigo-600" />} />
 
-            <div className="space-y-3 p-3 bg-amber-50/30 rounded-xl border border-amber-100/50">
-              <label className="text-[10px] font-extrabold text-amber-700 uppercase block">Стоимость</label>
+            <div className="space-y-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+              <label className="text-[10px] font-extrabold text-slate-700 uppercase block mb-1">Расчёт стоимости</label>
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">Цена за кг</span>
-                  <input type="text" value={inputs.priceKg} onChange={(e) => sync('priceKg', e.target.value)} className="h-9 px-2 bg-white border border-slate-200 rounded-md text-sm font-bold outline-none" />
+                <div 
+                  className={`flex flex-col gap-1 p-2 rounded-lg border transition-all cursor-pointer ${pricePriority === 'kg' ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200 opacity-70'}`}
+                  onClick={() => setPricePriority('kg')}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Цена / КГ</span>
+                    {pricePriority === 'kg' && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />}
+                  </div>
+                  <input 
+                    type="text" 
+                    value={inputs.priceKg} 
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => sync('priceKg', e.target.value)} 
+                    className="h-8 w-full bg-transparent text-sm font-black outline-none" 
+                  />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">Цена за м²</span>
-                  <input type="text" value={inputs.priceM2} onChange={(e) => sync('priceM2', e.target.value)} className="h-9 px-2 bg-white border border-slate-200 rounded-md text-sm font-bold outline-none" />
+                <div 
+                  className={`flex flex-col gap-1 p-2 rounded-lg border transition-all cursor-pointer ${pricePriority === 'm2' ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200 opacity-70'}`}
+                  onClick={() => setPricePriority('m2')}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Цена / М²</span>
+                    {pricePriority === 'm2' && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />}
+                  </div>
+                  <input 
+                    type="text" 
+                    value={inputs.priceM2} 
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => sync('priceM2', e.target.value)} 
+                    className="h-8 w-full bg-transparent text-sm font-black outline-none" 
+                  />
                 </div>
               </div>
             </div>
@@ -324,4 +358,3 @@ function ResultSmallCard({ label, value, unit, icon, colorClass }: { label: stri
     </div>
   );
 }
-
