@@ -219,7 +219,7 @@ export default function App() {
             <InputField label="Площадь (м²)" value={inputs.area} onChange={(v) => sync('area', v)} icon={<Maximize className="w-3 h-3 text-emerald-600" />} />
 
             <div className="flex flex-col gap-1.5 p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Толщина (мкр)</label>
+              <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Толщина (мкм)</label>
               <div className="relative">
                 <select 
                   value={selectedThickness}
@@ -294,7 +294,7 @@ export default function App() {
       </main>
 
       <footer className="h-10 bg-white border-t border-border-subtle flex items-center justify-between px-6 shrink-0 text-[11px] text-text-muted uppercase tracking-widest font-semibold">
-        <div>v2.6.0-stable | ООО ИПК</div>
+        <div>ООО ИПК | Designed by Economist</div>
         <div>Инструментарий пересчёта ПЭТ материалов</div>
       </footer>
     </div>
