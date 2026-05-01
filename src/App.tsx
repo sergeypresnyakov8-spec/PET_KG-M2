@@ -78,9 +78,26 @@ const DEFAULT_PET_DATA: PETRecord[] = [
 ];
 
 // --- UTILS ---
+const formatInputValue = (val: string) => {
+  if (!val) return "";
+  let raw = val.replace(/\s/g, '').replace(/\./g, ',').replace(/[^\d,]/g, '');
+  if (!raw) return "";
+  const parts = raw.split(',');
+  let intP = parts[0];
+  if (intP === '') intP = '0';
+  else if (intP.length > 1 && intP.startsWith('0') && intP !== '0') {
+    intP = parseInt(intP, 10).toString();
+  }
+  let formattedInt = intP.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  if (parts.length > 1) {
+    return `${formattedInt},${parts.slice(1).join('')}`;
+  }
+  return formattedInt;
+};
+
 const parseNum = (val: string) => {
   if (!val) return 0;
-  const normalized = val.replace(',', '.').replace(/\s/g, '');
+  const normalized = val.replace(',', '.').replace(/\s|\u00A0|\u202F/g, '');
   const n = parseFloat(normalized);
   return isNaN(n) ? 0 : n;
 };
@@ -91,7 +108,7 @@ const formatNum = (num: number, decimals: number = 2, showEmpty: boolean = true)
     minimumFractionDigits: 0, 
     maximumFractionDigits: decimals,
     useGrouping: true
-  });
+  }).replace(/\s|\u00A0|\u202F/g, ' ');
 };
 
 const displayRU = (num: number, dec: number = 2) => 
@@ -99,7 +116,7 @@ const displayRU = (num: number, dec: number = 2) =>
     minimumFractionDigits: dec, 
     maximumFractionDigits: dec,
     useGrouping: true
-  });
+  }).replace(/\s|\u00A0|\u202F/g, ' ');
 
 // --- APP COMPONENT ---
 export default function App() {
@@ -110,13 +127,14 @@ export default function App() {
   // Input fields
   const [inputs, setInputs] = useState({
     weight: "420,17",
-    area: "15000",
-    length: "750000",
+    area: "15 000",
+    length: "750 000",
     format: "20",
     priceKg: "0",
     priceM2: "0"
   });
   const [pricePriority, setPricePriority] = useState<'kg' | 'm2'>('kg');
+  const [mainPriority, setMainPriority] = useState<'weight' | 'area' | 'length'>('area');
 
   // Load cache
   useEffect(() => {
@@ -126,6 +144,7 @@ export default function App() {
         const state = JSON.parse(saved);
         if (state.thickness) setSelectedThickness(state.thickness);
         if (state.pricePriority) setPricePriority(state.pricePriority);
+        if (state.mainPriority) setMainPriority(state.mainPriority);
         setInputs(prev => ({ ...prev, ...state }));
       } catch (e) { console.error(e); }
     }
@@ -135,9 +154,9 @@ export default function App() {
   // Save cache
   useEffect(() => {
     if (!loading) {
-      localStorage.setItem('pet_calc_cache', JSON.stringify({ ...inputs, thickness: selectedThickness, pricePriority }));
+      localStorage.setItem('pet_calc_cache', JSON.stringify({ ...inputs, thickness: selectedThickness, pricePriority, mainPriority }));
     }
-  }, [inputs, selectedThickness, pricePriority, loading]);
+  }, [inputs, selectedThickness, pricePriority, mainPriority, loading]);
 
   const record = useMemo(() => 
     data.find(r => r.thickness === selectedThickness) || data[0]
@@ -145,8 +164,9 @@ export default function App() {
 
   // Unified Sync Logic
   const sync = (source: string, val: string, currentFormat?: string) => {
-    const v = parseNum(val);
-    const updates: Partial<typeof inputs> = { [source]: val };
+    const cleanVal = formatInputValue(val);
+    const v = parseNum(cleanVal);
+    const updates: Partial<typeof inputs> = { [source]: cleanVal };
     const f = parseNum(currentFormat ?? inputs.format);
     const m2kg = record.m2PerKg;
     const gsm = record.weightPerM2 / 1000;
@@ -164,8 +184,15 @@ export default function App() {
       updates.area = formatNum(a);
       updates.weight = formatNum(a * gsm);
     } else if (source === 'format') {
-      const a = parseNum(inputs.area);
-      updates.length = formatNum(v > 0 ? (a / (v / 1000)) : 0, 1);
+      if (mainPriority === 'length') {
+        const l = parseNum(inputs.length);
+        const a = l * (v / 1000);
+        updates.area = formatNum(a);
+        updates.weight = formatNum(a * gsm);
+      } else {
+        const a = parseNum(inputs.area);
+        updates.length = formatNum(v > 0 ? (a / (v / 1000)) : 0, 1);
+      }
     } else if (source === 'priceKg') {
       updates.priceM2 = formatNum(v / (m2kg || 1));
     } else if (source === 'priceM2') {
@@ -178,7 +205,13 @@ export default function App() {
   // Recalculate on thickness or priority change
   useEffect(() => {
     if (!loading) {
-      sync('area', inputs.area);
+      if (mainPriority === 'weight') {
+        sync('weight', inputs.weight);
+      } else if (mainPriority === 'length') {
+        sync('length', inputs.length);
+      } else {
+        sync('area', inputs.area);
+      }
       // Sync price based on priority when thickness changes
       if (pricePriority === 'kg') {
         sync('priceKg', inputs.priceKg);
@@ -222,14 +255,11 @@ export default function App() {
               <h2 className="text-base font-bold text-slate-900 m-0 flex items-center gap-2">
                 <Calculator className="w-4 h-4 text-brand" /> Ввод данных
               </h2>
-              <p className="text-[10px] text-text-muted uppercase tracking-wider mt-1">Измените любой параметр</p>
+              <p className="text-[10px] text-text-muted uppercase tracking-wider mt-1">Точкой обозначается активный (неизменный) параметр</p>
             </div>
             
-            <InputField label="Общий вес (кг)" value={inputs.weight} onChange={(v) => sync('weight', v)} icon={<Weight className="w-3 h-3 text-brand" />} />
-            <InputField label="Площадь (м²)" value={inputs.area} onChange={(v) => sync('area', v)} icon={<Maximize className="w-3 h-3 text-emerald-600" />} />
-
             <div className="flex flex-col gap-1.5 p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Толщина (мкм)</label>
+              <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider">ПЭТ толщина (мкм)</label>
               <div className="relative">
                 <select 
                   value={selectedThickness}
@@ -242,12 +272,36 @@ export default function App() {
               </div>
             </div>
 
+            <InputField 
+              label="Общий вес (кг)" 
+              value={inputs.weight} 
+              onChange={(v) => { setMainPriority('weight'); sync('weight', v); }} 
+              icon={<Weight className="w-3 h-3 text-brand" />} 
+              isActive={mainPriority === 'weight'}
+              onClick={() => setMainPriority('weight')}
+            />
+            <InputField 
+              label="Площадь (м²)" 
+              value={inputs.area} 
+              onChange={(v) => { setMainPriority('area'); sync('area', v); }} 
+              icon={<Maximize className="w-3 h-3 text-emerald-600" />} 
+              isActive={mainPriority === 'area'}
+              onClick={() => setMainPriority('area')}
+            />
+
             <div className="flex flex-col gap-1.5 p-3 bg-slate-50 rounded-xl border border-slate-100">
               <label className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Ширина (мм)</label>
               <input type="text" value={inputs.format} onChange={(e) => sync('format', e.target.value)} className="h-11 px-3 bg-white border border-slate-200 rounded-lg text-lg font-bold outline-none" />
             </div>
 
-            <InputField label="Длина (м.п.)" value={inputs.length} onChange={(v) => sync('length', v)} icon={<Scissors className="w-3 h-3 text-indigo-600" />} />
+            <InputField 
+              label="Длина (м.п.)" 
+              value={inputs.length} 
+              onChange={(v) => { setMainPriority('length'); sync('length', v); }} 
+              icon={<Scissors className="w-3 h-3 text-indigo-600" />} 
+              isActive={mainPriority === 'length'}
+              onClick={() => setMainPriority('length')}
+            />
 
             <div className="space-y-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
               <label className="text-[10px] font-extrabold text-slate-700 uppercase block mb-1">Расчёт стоимости</label>
@@ -302,8 +356,8 @@ export default function App() {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/90 backdrop-blur-xl border border-white/50 rounded-[2rem] p-8 shadow-2xl flex flex-col justify-between hover:shadow-brand/5 transition-all">
               <div>
                 <label className="text-xs font-bold text-text-muted uppercase tracking-[0.1em] mb-4 block">Характеристика</label>
-                <div className="text-5xl font-black text-slate-900 mb-2">
-                  {selectedThickness} <span className="text-2xl font-normal text-text-muted">мкр</span>
+                <div className="text-5xl font-black text-slate-900 mb-2 whitespace-nowrap">
+                  ПЭТ {selectedThickness} <span className="text-2xl font-normal text-text-muted">мкр</span>
                 </div>
               </div>
               <div className="space-y-3 pt-6 border-t border-slate-50">
@@ -339,10 +393,16 @@ export default function App() {
   );
 }
 
-function InputField({ label, value, onChange, icon }: { label: string, value: string, onChange: (v: string) => void, icon?: React.ReactNode }) {
+function InputField({ label, value, onChange, icon, isActive, onClick }: { label: string, value: string, onChange: (v: string) => void, icon?: React.ReactNode, isActive?: boolean, onClick?: () => void }) {
   return (
-    <div className="flex flex-col gap-1.5 focus-within:ring-2 focus-within:ring-brand/10 transition-all p-3 border border-slate-200 rounded-xl bg-white shadow-sm ring-offset-2">
-      <label className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider flex items-center gap-1.5">{icon}{label}</label>
+    <div 
+      onClick={onClick}
+      className={`flex flex-col gap-1.5 focus-within:ring-2 focus-within:ring-brand/10 transition-all p-3 border rounded-xl shadow-sm ring-offset-2 ${isActive !== undefined ? 'cursor-pointer' : ''} ${isActive ? 'bg-blue-50/40 border-blue-200' : 'bg-white border-slate-200'}`}
+    >
+      <div className="flex justify-between items-center">
+        <label className="text-[10px] font-extrabold text-text-muted uppercase tracking-wider flex items-center gap-1.5">{icon}{label}</label>
+        {isActive && <div className="w-1.5 h-1.5 bg-brand rounded-full" />}
+      </div>
       <input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="h-9 w-full bg-transparent text-xl font-bold font-mono text-slate-900 outline-none" />
     </div>
   );
