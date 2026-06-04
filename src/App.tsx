@@ -131,9 +131,10 @@ export default function App() {
     length: "750 000",
     format: "20",
     priceKg: "0",
-    priceM2: "0"
+    priceM2: "0",
+    priceMp: "0"
   });
-  const [pricePriority, setPricePriority] = useState<'kg' | 'm2'>('kg');
+  const [pricePriority, setPricePriority] = useState<'kg' | 'm2' | 'mp'>('kg');
   const [mainPriority, setMainPriority] = useState<'weight' | 'area' | 'length'>('area');
 
   // Load cache
@@ -145,6 +146,11 @@ export default function App() {
         if (state.thickness) setSelectedThickness(state.thickness);
         if (state.pricePriority) setPricePriority(state.pricePriority);
         if (state.mainPriority) setMainPriority(state.mainPriority);
+        if (state.priceM2 && !state.priceMp) {
+          const pM2 = parseNum(state.priceM2);
+          const f = parseNum(state.format || "20");
+          state.priceMp = formatNum(pM2 * (f / 1000));
+        }
         setInputs(prev => ({ ...prev, ...state }));
       } catch (e) { console.error(e); }
     }
@@ -193,10 +199,27 @@ export default function App() {
         const a = parseNum(inputs.area);
         updates.length = formatNum(v > 0 ? (a / (v / 1000)) : 0, 1);
       }
+      
+      if (pricePriority === 'mp') {
+        const pMp = parseNum(inputs.priceMp);
+        const pM2 = v > 0 ? (pMp / (v / 1000)) : 0;
+        updates.priceM2 = formatNum(pM2);
+        updates.priceKg = formatNum(pM2 * m2kg);
+      } else {
+        const pM2 = parseNum(updates.priceM2 ?? inputs.priceM2);
+        updates.priceMp = formatNum(pM2 * (v / 1000));
+      }
     } else if (source === 'priceKg') {
-      updates.priceM2 = formatNum(v / (m2kg || 1));
+      const pM2 = v / (m2kg || 1);
+      updates.priceM2 = formatNum(pM2);
+      updates.priceMp = formatNum(pM2 * (f / 1000));
     } else if (source === 'priceM2') {
       updates.priceKg = formatNum(v * m2kg);
+      updates.priceMp = formatNum(v * (f / 1000));
+    } else if (source === 'priceMp') {
+      const pM2 = f > 0 ? (v / (f / 1000)) : 0;
+      updates.priceM2 = formatNum(pM2);
+      updates.priceKg = formatNum(pM2 * m2kg);
     }
 
     setInputs(prev => ({ ...prev, ...updates }));
@@ -215,8 +238,10 @@ export default function App() {
       // Sync price based on priority when thickness changes
       if (pricePriority === 'kg') {
         sync('priceKg', inputs.priceKg);
-      } else {
+      } else if (pricePriority === 'm2') {
         sync('priceM2', inputs.priceM2);
+      } else if (pricePriority === 'mp') {
+        sync('priceMp', inputs.priceMp);
       }
     }
   }, [selectedThickness]);
@@ -305,13 +330,13 @@ export default function App() {
 
             <div className="space-y-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
               <label className="text-[10px] font-extrabold text-slate-700 uppercase block mb-1">Расчёт стоимости</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div 
-                  className={`flex flex-col gap-1 p-2 rounded-lg border transition-all cursor-pointer ${pricePriority === 'kg' ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200 opacity-70'}`}
+                  className={`flex flex-col gap-1 p-2 rounded-lg border transition-all cursor-pointer ${pricePriority === 'kg' ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'}`}
                   onClick={() => setPricePriority('kg')}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Цена / КГ</span>
+                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Цена / КГ</span>
                     {pricePriority === 'kg' && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />}
                   </div>
                   <input 
@@ -325,11 +350,11 @@ export default function App() {
                   />
                 </div>
                 <div 
-                  className={`flex flex-col gap-1 p-2 rounded-lg border transition-all cursor-pointer ${pricePriority === 'm2' ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200 opacity-70'}`}
+                  className={`flex flex-col gap-1 p-2 rounded-lg border transition-all cursor-pointer ${pricePriority === 'm2' ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'}`}
                   onClick={() => setPricePriority('m2')}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Цена / М²</span>
+                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Цена / М²</span>
                     {pricePriority === 'm2' && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />}
                   </div>
                   <input 
@@ -338,6 +363,24 @@ export default function App() {
                     onChange={(e) => {
                       setPricePriority('m2');
                       sync('priceM2', e.target.value);
+                    }} 
+                    className="h-8 w-full bg-transparent text-sm font-black outline-none" 
+                  />
+                </div>
+                <div 
+                  className={`flex flex-col gap-1 p-2 rounded-lg border transition-all cursor-pointer ${pricePriority === 'mp' ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'}`}
+                  onClick={() => setPricePriority('mp')}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter text-ellipsis overflow-hidden whitespace-nowrap">Цена / М.П.</span>
+                    {pricePriority === 'mp' && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />}
+                  </div>
+                  <input 
+                    type="text" 
+                    value={inputs.priceMp} 
+                    onChange={(e) => {
+                      setPricePriority('mp');
+                      sync('priceMp', e.target.value);
                     }} 
                     className="h-8 w-full bg-transparent text-sm font-black outline-none" 
                   />
